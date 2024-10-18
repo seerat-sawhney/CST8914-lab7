@@ -27,110 +27,123 @@
     </head>
     <body>
         <h1>Feedback form</h1>
-    <form>
+        <form id="feedbackForm">
+        <!-- Full name field with required indicator -->
         <div class="control">
-          <label>Full name <span class="required">*</span></label><input id="name" name="name" type="text" />
+          <label for="name">Full name <span class="required">*</span></label>
+                <input id="name" name="name" type="text" aria-required="true" aria-describedby="name_description" />
+                <span id="name_description">Please enter your full name here .</span>
         </div>
         <div class="control">
-          <label>Biography</label><textarea id="biography" name="biography" type="text"></textarea>
-          <span>Include examples on your skills in JavaScript.</span>
+          <label for="biography">Biography</label><textarea id="biography" name="biography" aria-describedby="biography_description" type="text"></textarea> <!-- Added 'for' attribute to connect label with the textarea --> <!-- Added aria-describedby for screen reader context -->
+          <span id="biography_description">Include examples of your skills in JavaScript.</span> <!-- Instruction for screen reader users -->
         </div>
         
-          <div>Gender</div>
-          <div class="control">
-            <input id="gender_male" name="gender" type="radio" value="male" /><label>Male</label>
+        <fieldset class="control">
+          <legend>Gender <span class="required">*</span></legend>
+          <div>
+            <input id="gender_male" name="gender" type="radio" value="male" aria-describedby="gender_description" />
+            <label for="gender_male">Male</label> <!-- Added 'for' attribute to connect label with radio input -->
           </div>
-          <div class="control">
-            <input id="gender_female" name="gender" type="radio" value="female" /><label>Female</label>
+            <input id="gender_female" name="gender" type="radio" value="female" aria-describedby="gender_description" />
+            <label for="gender_female">Female</label> <!-- Added 'for' attribute to connect label with radio input -->
           </div>
-        
+          <div id="gender_error" class="error" aria-live="polite" style="display: none;">Please select your gender.</div>
+        </fieldset>
         <div class="control">
-          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" /><label>I accept the terms and conditions</label>
+          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" aria-required="true" />
+          <label for="accept_agbs">I accept the terms and conditions</label> <!-- Added 'for' attribute to connect label with checkbox -->
         </div>
         <div class="control">
-          <input name="validate" type="hidden" value="1" /><input type="submit" value="Register" />
+          <input name="validate" type="hidden" value="1" />
+          <input type="submit" value="Register" />
         </div>
-      </form>
+       <!-- Error for summary area for screen readers -->
+       <div id="error_summary" class="error-list" aria-live="assertive" style="display: none;">
+        <h2>Errors:</h2>
+        <ul id="error_messages"></ul>
+    </div>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script>
+    "use strict";
       
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-          <script>"use strict";
-      
-      ;
-      (function () {
-        var validateInput;
-      
-        $.urlParam = function (name) {
-          var results;
-          results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
-      
-          if (results === null) {
-            return null;
-          } else {
-            return decodeURI(results[1]) || null;
-          }
-        };
-      
-        validateInput = function validateInput(input, message) {
-          var $elementToDescribe, $error, $errorContainer, $fieldset, $input, $referencedElement, value;
-          $input = $('[name="' + input + '"]');
-      
-          if ((value = $.urlParam(input)) === null) {
-            if ($('fieldset.errors').length === 0) {
-              $('form').prepend('<fieldset class="errors"><legend>Errors</legend><ul></ul></fieldset>');
+    (function () {
+            function validateInput(input) {
+                var $input = $('[name="' + input + '"]');
+                var $error = $('#' + input + '_error');
+                var isValid = true;
+
+                if (input === 'gender') {
+                    // Check , gender radio button is selected or not 
+                    if ($('input[name="gender"]:checked').length === 0) {
+                        $error.show();
+                        isValid = false;
+                    } else {
+                        $error.hide();
+                    }
+                } else {
+                    // Display the error message if input is empty
+                    if ($input.val().trim() === '') {
+                        $error.show();
+                        isValid = false;
+                    } else {
+                        $error.hide();
+                    }
+                }
+
+                return isValid;
             }
-      
-            $referencedElement = null;
-            $elementToDescribe = null;
-            $errorContainer = $('fieldset.errors ul');
-      
-            if ($input.is(':radio')) {
-              $fieldset = $input.closest('fieldset');
-              $elementToDescribe = $fieldset;
-              $referencedElement = $input.filter(':first');
-            } else {
-              $elementToDescribe = $input;
-              $referencedElement = $input;
+
+            function validateForm(event) {
+                event.preventDefault(); // Prevent form submission to validate
+                var isFormValid = true;
+                $('#error_messages').empty(); // Clear previous error messages
+
+                // Validate each field
+                if (!validateInput('name')) {
+                    isFormValid = false;
+                    $('#error_messages').append('<li>' + $('#name_error').text() + '</li>'); // Add to error summary
+                }
+                if (!validateInput('gender')) {
+                    isFormValid = false;
+                    $('#error_messages').append('<li>' + $('#gender_error').text() + '</li>'); // Add to error summary
+                }
+
+                // If the valid form, showing the success message
+                if (isFormValid) {
+                    alert('All inputs are valid.');
+                    $('#error_summary').hide(); // Hiding error summary when form is valid
+                } else {
+                    // Serror summary ,  set focus
+                    $('#error_summary').show();
+                    $('#error_summary').focus(); // Moving focus to error summary
+                }
             }
-      // R.G. hint: fix next line ;)
-            $error = $('<a>' + message + '</a>');
-            $error.click(function (e) {
-              // If we rely on the link's href pointing to the input's ID, it doesn't trigger forms mode in screen readers
-              $referencedElement.focus();
-              return e.preventDefault();
+
+            // Function to clear error messages as the user interacts with fields
+            function clearError(input) {
+                var $error = $('#' + input + '_error');
+                if ($error.is(':visible')) {
+                    $error.hide();
+                    $('#error_messages').find('li:contains("' + $error.text() + '")').remove(); // Remove from error summary
+                }
+            }
+
+            $(document).ready(function () {
+                // Validate form for submit
+                $('#feedbackForm').on('submit', validateForm);
+
+                // Clearing error messages on  the input change
+                $('#name').on('input', function () {
+                    clearError('name');
+                });
+                $('input[name="gender"]').on('change', function () {
+                    clearError('gender');
+                });
             });
-            $elementToDescribe.attr('aria-describedby', input + '_description');
-            $errorContainer.append('<li>').find('li:last').append($error);
-      
-            if ($(':not(form):focus').length === 0) {
-              // See https://stackoverflow.com/questions/46134247/jquery-setting-focus-doesnt-work-in-ie11/
-            
-            }
-          } else {
-            if ($input.is(':checkbox')) {
-              $input.attr('checked', true);
-            }
-      
-            if ($input.is(':radio')) {
-              return $input.filter('[value="' + value + '"]').attr('checked', true);
-            } else {
-              return $input.val(value);
-            }
-          }
-        };
-      
-        $(document).ready(function () {
-          if ($.urlParam('validate')) {
-            validateInput('name', 'Please enter your name!');
-            validateInput('biography', 'Please tell us something about your history!');
-            validateInput('gender', 'Please tell us your gender!');
-            validateInput('accept_agbs', 'You must accept our terms and conditions!');
-      
-            if ($('.error').length === 0) {
-              return alert('All inputs are valid.');
-            }
-          }
-        });
-      }).call(void 0);</script>
-                
-        </body>
-      </html>
+        })();
+    </script>
+</body>
+</html>
